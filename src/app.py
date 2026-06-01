@@ -28,216 +28,16 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# --- In-Memory Fallback Database ---
-# Seed data matching db/seed.sql
-IN_MEMORY_COOPERATIVES = {
-    "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df": {
-        "id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "name": "Liton Free Farmers Cooperative",
-        "municipality": "Kabacan"
-    }
-}
-
-IN_MEMORY_ANIMALS = {
-    # 5th Gen
-    "aa5e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f": {
-        "id": "aa5e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "ear_tag_number": "TAG-GGG-DAM1",
-        "registration_name": "Liton GGG Dam 1",
-        "birth_date": "2016-01-01",
-        "gender": "F",
-        "dairy_blood_percentage": 1.0,
-        "dam_id": None,
-        "sire_id": None,
-        "cooperative_id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "status": "Dry"
-    },
-    "ba5e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f": {
-        "id": "ba5e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "ear_tag_number": "TAG-GGG-SIRE1",
-        "registration_name": "Liton GGG Sire 1",
-        "birth_date": "2016-01-01",
-        "gender": "M",
-        "dairy_blood_percentage": 1.0,
-        "dam_id": None,
-        "sire_id": None,
-        "cooperative_id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "status": "Agistment"
-    },
-    # 4th Gen
-    "aa4e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f": {
-        "id": "aa4e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "ear_tag_number": "TAG-GG-DAM1",
-        "registration_name": "Liton GG Dam 1",
-        "birth_date": "2018-01-01",
-        "gender": "F",
-        "dairy_blood_percentage": 1.0,
-        "dam_id": "aa5e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "sire_id": "ba5e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "cooperative_id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "status": "Dry"
-    },
-    "ba4e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f": {
-        "id": "ba4e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "ear_tag_number": "TAG-GG-SIRE1",
-        "registration_name": "Liton GG Sire 1",
-        "birth_date": "2018-01-01",
-        "gender": "M",
-        "dairy_blood_percentage": 1.0,
-        "dam_id": None,
-        "sire_id": None,
-        "cooperative_id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "status": "Agistment"
-    },
-    # 3rd Gen
-    "aa3e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f": {
-        "id": "aa3e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "ear_tag_number": "TAG-G-DAM1",
-        "registration_name": "Liton G Dam 1",
-        "birth_date": "2020-01-01",
-        "gender": "F",
-        "dairy_blood_percentage": 1.0,
-        "dam_id": "aa4e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "sire_id": "ba4e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "cooperative_id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "status": "Dry"
-    },
-    "ba3e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f": {
-        "id": "ba3e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "ear_tag_number": "TAG-G-SIRE1",
-        "registration_name": "Liton G Sire 1",
-        "birth_date": "2020-01-01",
-        "gender": "M",
-        "dairy_blood_percentage": 1.0,
-        "dam_id": None,
-        "sire_id": None,
-        "cooperative_id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "status": "Agistment"
-    },
-    # 2nd Gen
-    "ca9e88d1-55fc-42b7-a3a8-4e8979148d21": {
-        "id": "ca9e88d1-55fc-42b7-a3a8-4e8979148d21",
-        "ear_tag_number": "TAG-GP-DAM",
-        "registration_name": "Liton Grand Dam",
-        "birth_date": "2022-01-01",
-        "gender": "F",
-        "dairy_blood_percentage": 1.0,
-        "dam_id": "aa3e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "sire_id": "ba3e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "cooperative_id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "status": "Dry"
-    },
-    "fa9e88d1-55fc-42b7-a3a8-4e8979148d22": {
-        "id": "fa9e88d1-55fc-42b7-a3a8-4e8979148d22",
-        "ear_tag_number": "TAG-GP-SIRE",
-        "registration_name": "Liton Grand Sire",
-        "birth_date": "2022-01-01",
-        "gender": "M",
-        "dairy_blood_percentage": 1.0,
-        "dam_id": None,
-        "sire_id": None,
-        "cooperative_id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "status": "Agistment"
-    },
-    # Dams D1 and D2 (sisters)
-    "da1e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f": {
-        "id": "da1e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "ear_tag_number": "TAG-DAM-D1",
-        "registration_name": "Liton Dam D1",
-        "birth_date": "2023-11-01",
-        "gender": "F",
-        "dairy_blood_percentage": 1.0,
-        "dam_id": "ca9e88d1-55fc-42b7-a3a8-4e8979148d21",
-        "sire_id": "fa9e88d1-55fc-42b7-a3a8-4e8979148d22",
-        "cooperative_id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "status": "Dry"
-    },
-    "da2e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f": {
-        "id": "da2e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "ear_tag_number": "TAG-DAM-D2",
-        "registration_name": "Liton Dam D2",
-        "birth_date": "2023-11-15",
-        "gender": "F",
-        "dairy_blood_percentage": 1.0,
-        "dam_id": "ca9e88d1-55fc-42b7-a3a8-4e8979148d21",
-        "sire_id": "fa9e88d1-55fc-42b7-a3a8-4e8979148d22",
-        "cooperative_id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "status": "Dry"
-    },
-    # Sires
-    "fa9e88d1-55fc-42b7-a3a8-4e8979148d25": {
-        "id": "fa9e88d1-55fc-42b7-a3a8-4e8979148d25",
-        "ear_tag_number": "TAG-SIRE-A",
-        "registration_name": "Unrelated Sire A",
-        "birth_date": "2023-01-01",
-        "gender": "M",
-        "dairy_blood_percentage": 1.0,
-        "dam_id": None,
-        "sire_id": None,
-        "cooperative_id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "status": "Agistment"
-    },
-    "fa9e88d1-55fc-42b7-a3a8-4e8979148d26": {
-        "id": "fa9e88d1-55fc-42b7-a3a8-4e8979148d26",
-        "ear_tag_number": "TAG-SIRE-B",
-        "registration_name": "Unrelated Sire B",
-        "birth_date": "2023-01-01",
-        "gender": "M",
-        "dairy_blood_percentage": 1.0,
-        "dam_id": None,
-        "sire_id": None,
-        "cooperative_id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "status": "Agistment"
-    },
-    # Cousin A & B
-    "aa1e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f": {
-        "id": "aa1e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "ear_tag_number": "TAG-COUSIN-A",
-        "registration_name": "Cousin A",
-        "birth_date": "2025-01-01",
-        "gender": "F",
-        "dairy_blood_percentage": 1.0,
-        "dam_id": "da1e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "sire_id": "fa9e88d1-55fc-42b7-a3a8-4e8979148d25",
-        "cooperative_id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "status": "Dry"
-    },
-    "ba2e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f": {
-        "id": "ba2e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "ear_tag_number": "TAG-COUSIN-B",
-        "registration_name": "Cousin B",
-        "birth_date": "2025-01-10",
-        "gender": "M",
-        "dairy_blood_percentage": 1.0,
-        "dam_id": "da2e2f3a-4a5b-6c7d-8e9f-0a1b2c3d4e5f",
-        "sire_id": "fa9e88d1-55fc-42b7-a3a8-4e8979148d26",
-        "cooperative_id": "3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df",
-        "status": "Agistment"
-    }
-}
-
-IN_MEMORY_BREEDING_RECORDS = {}
-IN_MEMORY_PRODUCT_BATCHES = []
-
 def get_db_connection():
     try:
         import psycopg2
         conn = psycopg2.connect(DATABASE_URL, connect_timeout=1)
         return conn
     except Exception as e:
-        if DISABLE_IN_MEMORY_FALLBACK:
-            logger.critical("Database connection failed and DISABLE_IN_MEMORY_FALLBACK is true.")
-            raise RuntimeError(f"Database connection failed: {e}") from e
-        # Silently fall back to in-memory mode
-        return None
+        logger.critical(f"Database connection failed: {e}")
+        raise RuntimeError(f"Database connection failed: {e}") from e
 
 # --- Dynamic Public API Caches & Helpers ---
-WEATHER_CACHE = {}
-SOIL_CACHE = {}
-
-DEFAULT_TEMP_LOG = [25.0] * 24
-DEFAULT_SOIL_TEMP = 26.5
-DEFAULT_SOIL_MOISTURE = 0.22
 
 MUNICIPALITIES_GEO = [
     {"name": "Kabacan", "lat": 7.118, "lon": 124.843, "texture": "Clay Loam", "clay_pct": 28.0},
@@ -250,23 +50,14 @@ MUNICIPALITIES_GEO = [
 
 async def fetch_open_meteo_weather(latitude: float, longitude: float) -> List[float]:
     url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&hourly=temperature_2m&past_days=1&forecast_days=1"
-    cache_key = (latitude, longitude)
-    try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            response = await client.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                temps = data.get("hourly", {}).get("temperature_2m", [])
-                if temps and len(temps) >= 24:
-                    result_temps = [float(t) for t in temps[-24:]]
-                    WEATHER_CACHE[cache_key] = result_temps
-                    return result_temps
-    except Exception as e:
-        logger.warning(f"Error fetching weather from Open-Meteo for {latitude}, {longitude}: {e}")
-    
-    if cache_key in WEATHER_CACHE:
-        return WEATHER_CACHE[cache_key]
-    return DEFAULT_TEMP_LOG
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(url)
+        response.raise_for_status()
+        data = response.json()
+        temps = data.get("hourly", {}).get("temperature_2m", [])
+        if not temps or len(temps) < 24:
+            raise RuntimeError("Invalid or incomplete weather data from Open-Meteo API")
+        return [float(t) for t in temps[-24:]]
 
 def evaluate_forage_suitability(temp: float, moisture: float, texture: str, clay_pct: float) -> Dict[str, Any]:
     # Napier grass evaluation
@@ -339,28 +130,17 @@ async def fetch_soil_suitability(latitude: float, longitude: float) -> Dict[str,
             min_dist = dist
             nearest = m
             
-    cache_key = (latitude, longitude)
-    soil_temp = DEFAULT_SOIL_TEMP
-    soil_moisture = DEFAULT_SOIL_MOISTURE
-    
     url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&hourly=soil_temperature_0_to_7cm,soil_moisture_0_to_7cm&forecast_days=1"
-    try:
-        async with httpx.AsyncClient(timeout=3.0) as client:
-            response = await client.get(url)
-            if response.status_code == 200:
-                data = response.json()
-                temps = data.get("hourly", {}).get("soil_temperature_0_to_7cm", [])
-                moistures = data.get("hourly", {}).get("soil_moisture_0_to_7cm", [])
-                if temps and moistures:
-                    soil_temp = float(sum(temps[:24]) / len(temps[:24]))
-                    soil_moisture = float(sum(moistures[:24]) / len(moistures[:24]))
-                    SOIL_CACHE[cache_key] = {"temp": soil_temp, "moisture": soil_moisture}
-    except Exception as e:
-        logger.warning(f"Error fetching soil parameters from Open-Meteo: {e}")
-    
-    if cache_key in SOIL_CACHE:
-        soil_temp = SOIL_CACHE[cache_key]["temp"]
-        soil_moisture = SOIL_CACHE[cache_key]["moisture"]
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        response = await client.get(url)
+        response.raise_for_status()
+        data = response.json()
+        temps = data.get("hourly", {}).get("soil_temperature_0_to_7cm", [])
+        moistures = data.get("hourly", {}).get("soil_moisture_0_to_7cm", [])
+        if not temps or not moistures:
+            raise RuntimeError("Invalid or incomplete soil suitability data from Open-Meteo API")
+        soil_temp = float(sum(temps[:24]) / len(temps[:24]))
+        soil_moisture = float(sum(moistures[:24]) / len(moistures[:24]))
         
     evaluation = evaluate_forage_suitability(soil_temp, soil_moisture, nearest["texture"], nearest["clay_pct"])
     
@@ -472,82 +252,66 @@ def register_animal(animal: AnimalCreate):
     dam_percentage = 0.0
     sire_percentage = 1.0 # Purebred sire default
 
-    if conn:
-        try:
-            import psycopg2.extras
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            
-            # Fetch dam percent
-            if animal.dam_id:
-                cursor.execute("SELECT dairy_blood_percentage FROM animals WHERE id = %s", (animal.dam_id,))
-                res = cursor.fetchone()
-                if res:
-                    dam_percentage = float(res["dairy_blood_percentage"])
-            # Fetch sire percent
-            if animal.sire_id:
-                cursor.execute("SELECT dairy_blood_percentage FROM animals WHERE id = %s", (animal.sire_id,))
-                res = cursor.fetchone()
-                if res:
-                    sire_percentage = float(res["dairy_blood_percentage"])
-                    
-            calculated_blood = calculate_genetic_blood_fraction(sire_percentage, dam_percentage)
-            
-            new_id = str(uuid.uuid4())
-            cursor.execute(
-                """
-                INSERT INTO animals (id, ear_tag_number, registration_name, birth_date, gender, 
-                                     dairy_blood_percentage, dam_id, sire_id, cooperative_id, status, vermicomposting_manure_yield_kg)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING *;
-                """,
-                (new_id, animal.ear_tag_number, animal.registration_name, animal.birth_date, animal.gender,
-                 calculated_blood, animal.dam_id, animal.sire_id, animal.cooperative_id, animal.status, animal.vermicomposting_manure_yield_kg)
-            )
-            result = cursor.fetchone()
-            conn.commit()
-            conn.close()
-            # Convert date objects to string for JSON serialization
-            result["birth_date"] = str(result["birth_date"])
-            result["dairy_blood_percentage"] = float(result["dairy_blood_percentage"])
-            return result
-        except Exception as e:
-            if conn:
-                conn.rollback()
-                conn.close()
-            logger.error(f"Postgres error: {e}")
-            if DISABLE_IN_MEMORY_FALLBACK:
+    try:
+        import psycopg2.extras
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        # Fetch dam percent
+        if animal.dam_id:
+            cursor.execute("SELECT dairy_blood_percentage FROM animals WHERE id = %s", (animal.dam_id,))
+            res = cursor.fetchone()
+            if res:
+                dam_percentage = float(res["dairy_blood_percentage"])
+            else:
                 raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Database insertion failed: {e}"
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Dam animal with id {animal.dam_id} not found."
                 )
-            # Failover to in-memory on DB insertion failure
-            conn = None
-
-    if not conn:
-        # In-Memory execution
-        if animal.dam_id in IN_MEMORY_ANIMALS:
-            dam_percentage = IN_MEMORY_ANIMALS[animal.dam_id]["dairy_blood_percentage"]
-        if animal.sire_id in IN_MEMORY_ANIMALS:
-            sire_percentage = IN_MEMORY_ANIMALS[animal.sire_id]["dairy_blood_percentage"]
-            
+        # Fetch sire percent
+        if animal.sire_id:
+            cursor.execute("SELECT dairy_blood_percentage FROM animals WHERE id = %s", (animal.sire_id,))
+            res = cursor.fetchone()
+            if res:
+                sire_percentage = float(res["dairy_blood_percentage"])
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Sire animal with id {animal.sire_id} not found."
+                )
+                
         calculated_blood = calculate_genetic_blood_fraction(sire_percentage, dam_percentage)
         
         new_id = str(uuid.uuid4())
-        record = {
-            "id": new_id,
-            "ear_tag_number": animal.ear_tag_number,
-            "registration_name": animal.registration_name,
-            "birth_date": str(animal.birth_date),
-            "gender": animal.gender,
-            "dairy_blood_percentage": calculated_blood,
-            "dam_id": animal.dam_id,
-            "sire_id": animal.sire_id,
-            "cooperative_id": animal.cooperative_id,
-            "status": animal.status,
-            "vermicomposting_manure_yield_kg": animal.vermicomposting_manure_yield_kg
-        }
-        IN_MEMORY_ANIMALS[new_id] = record
-        return record
+        cursor.execute(
+            """
+            INSERT INTO animals (id, ear_tag_number, registration_name, birth_date, gender, 
+                                 dairy_blood_percentage, dam_id, sire_id, cooperative_id, status, vermicomposting_manure_yield_kg)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING *;
+            """,
+            (new_id, animal.ear_tag_number, animal.registration_name, animal.birth_date, animal.gender,
+             calculated_blood, animal.dam_id, animal.sire_id, animal.cooperative_id, animal.status, animal.vermicomposting_manure_yield_kg)
+        )
+        result = cursor.fetchone()
+        conn.commit()
+        conn.close()
+        # Convert date objects to string for JSON serialization
+        result["birth_date"] = str(result["birth_date"])
+        result["dairy_blood_percentage"] = float(result["dairy_blood_percentage"])
+        return result
+    except HTTPException:
+        if conn:
+            conn.close()
+        raise
+    except Exception as e:
+        if conn:
+            conn.rollback()
+            conn.close()
+        logger.error(f"Postgres error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database insertion failed: {e}"
+        )
 
 @app.post("/breeding", status_code=status.HTTP_201_CREATED)
 def log_breeding(breeding: BreedingCreate):
@@ -558,38 +322,31 @@ def log_breeding(breeding: BreedingCreate):
     conn = get_db_connection()
     pedigree = {}
     
-    if conn:
-        try:
-            import psycopg2.extras
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            cursor.execute("SELECT id, dam_id, sire_id FROM animals;")
-            rows = cursor.fetchall()
-            for r in rows:
-                pedigree[str(r["id"])] = {
-                    "dam_id": str(r["dam_id"]) if r["dam_id"] else None,
-                    "sire_id": str(r["sire_id"]) if r["sire_id"] else None
-                }
-        except Exception as e:
-            logger.error(f"Postgres pedigree fetch error: {e}")
-            if DISABLE_IN_MEMORY_FALLBACK:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Database pedigree fetch failed: {e}"
-                )
-            conn = None
-
-    if not conn:
-        # Build pedigree from in-memory fallback
-        for anim_id, details in IN_MEMORY_ANIMALS.items():
-            pedigree[anim_id] = {
-                "dam_id": details.get("dam_id"),
-                "sire_id": details.get("sire_id")
+    try:
+        import psycopg2.extras
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute("SELECT id, dam_id, sire_id FROM animals;")
+        rows = cursor.fetchall()
+        for r in rows:
+            pedigree[str(r["id"])] = {
+                "dam_id": str(r["dam_id"]) if r["dam_id"] else None,
+                "sire_id": str(r["sire_id"]) if r["sire_id"] else None
             }
+    except Exception as e:
+        if conn:
+            conn.close()
+        logger.error(f"Postgres pedigree fetch error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database pedigree fetch failed: {e}"
+        )
 
     # Execute R relationship check
     try:
         calculate_relationship_coefficient(breeding.animal_id, breeding.semen_sire_id, pedigree)
     except ValueError as val_err:
+        if conn:
+            conn.close()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(val_err)
@@ -598,49 +355,30 @@ def log_breeding(breeding: BreedingCreate):
     expected_calving = breeding.insemination_date + timedelta(days=310)
     new_id = str(uuid.uuid4())
 
-    if conn:
-        try:
-            cursor.execute(
-                """
-                INSERT INTO breeding_records (id, animal_id, breeding_type, semen_batch_code, insemination_date, repayment_status)
-                VALUES (%s, %s, %s, %s, %s, 'Pending')
-                RETURNING *;
-                """,
-                (new_id, breeding.animal_id, breeding.breeding_type, breeding.semen_batch_code, breeding.insemination_date)
-            )
-            result = cursor.fetchone()
-            conn.commit()
+    try:
+        cursor.execute(
+            """
+            INSERT INTO breeding_records (id, animal_id, breeding_type, semen_batch_code, insemination_date, repayment_status)
+            VALUES (%s, %s, %s, %s, %s, 'Pending')
+            RETURNING *;
+            """,
+            (new_id, breeding.animal_id, breeding.breeding_type, breeding.semen_batch_code, breeding.insemination_date)
+        )
+        result = cursor.fetchone()
+        conn.commit()
+        conn.close()
+        result["insemination_date"] = str(result["insemination_date"])
+        result["expected_calving_date"] = str(result["expected_calving_date"])
+        return result
+    except Exception as e:
+        if conn:
+            conn.rollback()
             conn.close()
-            result["insemination_date"] = str(result["insemination_date"])
-            result["expected_calving_date"] = str(result["expected_calving_date"])
-            return result
-        except Exception as e:
-            if conn:
-                conn.rollback()
-                conn.close()
-            logger.error(f"Postgres breeding insertion error: {e}")
-            if DISABLE_IN_MEMORY_FALLBACK:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Database breeding insertion failed: {e}"
-                )
-            conn = None
-
-    if not conn:
-        record = {
-            "id": new_id,
-            "animal_id": breeding.animal_id,
-            "breeding_type": breeding.breeding_type,
-            "semen_batch_code": breeding.semen_batch_code,
-            "insemination_date": str(breeding.insemination_date),
-            "expected_calving_date": str(expected_calving),
-            "actual_calving_date": None,
-            "calving_outcome_gender": None,
-            "repayment_due_date": None,
-            "repayment_status": "Pending"
-        }
-        IN_MEMORY_BREEDING_RECORDS[new_id] = record
-        return record
+        logger.error(f"Postgres breeding insertion error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database breeding insertion failed: {e}"
+        )
 
 @app.post("/telemetry")
 async def process_telemetry(payload: TelemetryPayload):
@@ -681,27 +419,23 @@ def create_finished_batch(batch: BatchCreate):
     conn = get_db_connection()
     prev_hash = batch.previous_batch_hash
 
-    if not prev_hash:
-        # Retrieve latest signature to chain
+    try:
+        import psycopg2.extras
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        if not prev_hash:
+            # Retrieve latest signature to chain
+            cursor.execute("SELECT cryptographic_signature FROM product_batches ORDER BY manufacture_date DESC, id DESC LIMIT 1;")
+            res = cursor.fetchone()
+            if res:
+                prev_hash = res["cryptographic_signature"]
+    except Exception as e:
         if conn:
-            try:
-                import psycopg2.extras
-                cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-                cursor.execute("SELECT cryptographic_signature FROM product_batches ORDER BY manufacture_date DESC, id DESC LIMIT 1;")
-                res = cursor.fetchone()
-                if res:
-                    prev_hash = res["cryptographic_signature"]
-            except Exception as e:
-                logger.error(f"Postgres latest signature fetch error: {e}")
-                if DISABLE_IN_MEMORY_FALLBACK:
-                    raise HTTPException(
-                        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                        detail=f"Database latest signature fetch failed: {e}"
-                    )
-                conn = None
-        
-        if not conn and IN_MEMORY_PRODUCT_BATCHES:
-            prev_hash = IN_MEMORY_PRODUCT_BATCHES[-1]["cryptographic_signature"]
+            conn.close()
+        logger.error(f"Postgres latest signature fetch error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database latest signature fetch failed: {e}"
+        )
 
     if not prev_hash:
         prev_hash = "0" * 64
@@ -711,62 +445,41 @@ def create_finished_batch(batch: BatchCreate):
     signature = generate_batch_hash(
         previous_hash=prev_hash,
         batch_identifier=batch.batch_identifier,
-        volume=float(batch.quantity_units_produced), # treating unit volume mapping
+        volume=float(batch.quantity_units_produced),
         pasteur_temp=batch.pasteurization_temp_celsius,
         coliform_status=batch.coliform_test_status,
         timestamp=timestamp_str
     )
 
     new_id = str(uuid.uuid4())
-    if conn:
-        try:
-            cursor.execute(
-                """
-                INSERT INTO product_batches (id, batch_identifier, product_type, quantity_units_produced,
-                                             manufacture_date, shelf_life_days, coliform_test_status,
-                                             pasteurization_temp_celsius, previous_batch_hash, cryptographic_signature)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING *;
-                """,
-                (new_id, batch.batch_identifier, batch.product_type, batch.quantity_units_produced,
-                 batch.manufacture_date, batch.shelf_life_days, batch.coliform_test_status,
-                 batch.pasteurization_temp_celsius, prev_hash, signature)
-            )
-            result = cursor.fetchone()
-            conn.commit()
+    try:
+        cursor.execute(
+            """
+            INSERT INTO product_batches (id, batch_identifier, product_type, quantity_units_produced,
+                                         manufacture_date, shelf_life_days, coliform_test_status,
+                                         pasteurization_temp_celsius, previous_batch_hash, cryptographic_signature)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            RETURNING *;
+            """,
+            (new_id, batch.batch_identifier, batch.product_type, batch.quantity_units_produced,
+             batch.manufacture_date, batch.shelf_life_days, batch.coliform_test_status,
+             batch.pasteurization_temp_celsius, prev_hash, signature)
+        )
+        result = cursor.fetchone()
+        conn.commit()
+        conn.close()
+        result["manufacture_date"] = str(result["manufacture_date"])
+        result["expiry_date"] = str(result["expiry_date"])
+        return result
+    except Exception as e:
+        if conn:
+            conn.rollback()
             conn.close()
-            result["manufacture_date"] = str(result["manufacture_date"])
-            result["expiry_date"] = str(result["expiry_date"])
-            return result
-        except Exception as e:
-            if conn:
-                conn.rollback()
-                conn.close()
-            logger.error(f"Postgres batch insertion error: {e}")
-            if DISABLE_IN_MEMORY_FALLBACK:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Database batch insertion failed: {e}"
-                )
-            conn = None
-
-    if not conn:
-        expiry_date = batch.manufacture_date + timedelta(days=batch.shelf_life_days)
-        record = {
-            "id": new_id,
-            "batch_identifier": batch.batch_identifier,
-            "product_type": batch.product_type,
-            "quantity_units_produced": batch.quantity_units_produced,
-            "manufacture_date": str(batch.manufacture_date),
-            "shelf_life_days": batch.shelf_life_days,
-            "expiry_date": str(expiry_date),
-            "coliform_test_status": batch.coliform_test_status,
-            "pasteurization_temp_celsius": batch.pasteurization_temp_celsius,
-            "previous_batch_hash": prev_hash,
-            "cryptographic_signature": signature
-        }
-        IN_MEMORY_PRODUCT_BATCHES.append(record)
-        return record
+        logger.error(f"Postgres batch insertion error: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database batch insertion failed: {e}"
+        )
 
 # --- HCI HTML Templates ---
 
@@ -1120,96 +833,6 @@ FIELD_PORTAL_HTML = """<!DOCTYPE html>
     <div class="toast" id="toast-el"></div>
     
     <script>
-        const fallbackI18n = {
-            ceb: {
-                title: "Portal sa Tekniko sa Uma",
-                registerAnimal: "Irehistro ang Hayop",
-                logBreeding: "I-log ang Pagsulay sa Pagpasanay",
-                earTag: "Numero sa Ear Tag",
-                regName: "Ngalan sa Rehistrasyon",
-                dob: "Petsa sa Pagkatawo",
-                gender: "Kasarian",
-                male: "Lalaki",
-                female: "Babaye",
-                damId: "ID sa Inahan (Opsyonal)",
-                sireId: "ID sa Amahan (Opsyonal)",
-                coopId: "ID sa Kooperatiba (Opsyonal)",
-                status: "Kahimtang",
-                manure: "Abot sa Manure (kg, Opsyonal)",
-                breedAnimal: "ID sa Hayop (Inahan)",
-                breedingType: "Matang sa Pagpasanay",
-                semenCode: "Semen Batch Code (Opsyonal)",
-                insemDate: "Petsa sa Inseminasyon",
-                semenSire: "ID sa Sire nga Semen",
-                syncStatusSynced: "Gisabay (Synced)",
-                syncStatusPending: "Pending sa Sync ({count} items)",
-                syncStatusOffline: "Walay Koneksyon ({count} items)",
-                soilSuitability: "Yuta ug Kumpay",
-                latitude: "Latitude",
-                longitude: "Longitude",
-                checkSuitability: "Susihon ang Kumpay",
-                results: "Mga Resulta"
-            },
-            tl: {
-                title: "Portal ng Tekniko sa Bukid",
-                registerAnimal: "Irehistro ang Hayop",
-                logBreeding: "I-log ang Breeding",
-                earTag: "Numero ng Ear Tag",
-                regName: "Pangalan sa Rehistrasyon",
-                dob: "Petsa ng Kapanganakan",
-                gender: "Kasarian",
-                male: "Lalaki",
-                female: "Babae",
-                damId: "ID ng Ina (Opsyonal)",
-                sireId: "ID ng Ama (Opsyonal)",
-                coopId: "ID ng Kooperatiba (Opsyonal)",
-                status: "Katayuan",
-                manure: "Manure Yield (kg, Opsyonal)",
-                breedAnimal: "ID ng Hayop (Ina)",
-                breedingType: "Uri ng Pagpaparami",
-                semenCode: "Semen Batch Code (Opsyonal)",
-                insemDate: "Petsa ng Inseminasyon",
-                semenSire: "ID ng Semen Sire",
-                syncStatusSynced: "Naka-sync",
-                syncStatusPending: "Nakabinbin na Sync ({count} items)",
-                syncStatusOffline: "Offline Mode ({count} items)",
-                soilSuitability: "Lupa at Kumpay",
-                latitude: "Latitude",
-                longitude: "Longitude",
-                checkSuitability: "Suriin ang Kumpay",
-                results: "Mga Resulta"
-            },
-            hil: {
-                title: "Portal sang Tekniko sa Bukid",
-                registerAnimal: "Irehistro ang Sapat",
-                logBreeding: "I-log ang Pagpa-buad",
-                earTag: "Numero sang Ear Tag",
-                regName: "Pangalan sa Rehistrasyon",
-                dob: "Petsa sang Pagkabun-ag",
-                gender: "Kasarian",
-                male: "Lalaki",
-                female: "Babaye",
-                damId: "ID sang Iloy (Opsyonal)",
-                sireId: "ID sang Amay (Opsyonal)",
-                coopId: "ID sang Kooperatiba (Opsyonal)",
-                status: "Kahimtangan",
-                manure: "Abot sang Manure (kg, Opsyonal)",
-                breedAnimal: "ID sang Sapat (Iloy)",
-                breedingType: "Sahi sang Pagpa-buad",
-                semenCode: "Semen Batch Code (Opsyonal)",
-                insemDate: "Petsa sang Inseminasyon",
-                semenSire: "ID sang Sire nga Semen",
-                syncStatusSynced: "Naka-sync (Synced)",
-                syncStatusPending: "Nakabinbin nga Sync ({count} items)",
-                syncStatusOffline: "Offline Mode ({count} items)",
-                soilSuitability: "Duta kag Kumpay",
-                latitude: "Latitude",
-                longitude: "Longitude",
-                checkSuitability: "Surion ang Kumpay",
-                results: "Mga Resulta"
-            }
-        };
-
         const i18n = {
             en: {
                 title: "Field Technician Portal",
@@ -1297,7 +920,7 @@ FIELD_PORTAL_HTML = """<!DOCTYPE html>
                     
                     let translated = await translateText(cleanText, lang);
                     if (!translated) {
-                        translated = fallbackI18n[lang] ? fallbackI18n[lang][key] : text;
+                        translated = text;
                     } else if (hasCount) {
                         translated = translated.replace('COUNT_VAR', '{count}').replace('count_var', '{count}');
                     }
@@ -2232,10 +1855,10 @@ PASSPORT_NOT_FOUND_HTML = """<!DOCTYPE html>
             font-weight: 800;
         }}
         
-        p {{
+        p {
             color: var(--text-muted);
             line-height: 1.6;
-        }}
+        }
     </style>
 </head>
 <body>
@@ -2243,7 +1866,7 @@ PASSPORT_NOT_FOUND_HTML = """<!DOCTYPE html>
         <div class="warning-circle">!</div>
         <h1>Safety Passport Not Found</h1>
         <p>
-            The batch identifier <strong>{batch_id}</strong> could not be located in our physical database or in-memory fallback ledger. Please check spelling or verify registration status.
+            The batch identifier <strong>{batch_id}</strong> could not be located in our physical database. Please check spelling or verify registration status.
         </p>
     </div>
 </body>
@@ -2309,31 +1932,24 @@ async def get_dashboard_portal():
 def get_passport_portal(batch_id: str):
     """Serves the Inspector Traceability Passport."""
     conn = get_db_connection()
-    batch = None
-    
-    if conn:
-        try:
-            import psycopg2.extras
-            cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-            cursor.execute(
-                "SELECT * FROM product_batches WHERE batch_identifier = %s OR id::text = %s LIMIT 1;",
-                (batch_id, batch_id)
-            )
-            batch = cursor.fetchone()
+    try:
+        import psycopg2.extras
+        cursor = conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        cursor.execute(
+            "SELECT * FROM product_batches WHERE batch_identifier = %s OR id::text = %s LIMIT 1;",
+            (batch_id, batch_id)
+        )
+        batch = cursor.fetchone()
+        conn.close()
+    except Exception as e:
+        logger.error(f"Postgres passport error: {e}")
+        if conn:
             conn.close()
-        except Exception as e:
-            logger.error(f"Postgres passport error: {e}")
-            if conn:
-                conn.close()
-            conn = None
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Database query failed: {e}"
+        )
             
-    if not conn and not batch:
-        # Check in-memory fallback
-        for b in IN_MEMORY_PRODUCT_BATCHES:
-            if b["batch_identifier"] == batch_id or b["id"] == batch_id:
-                batch = b
-                break
-                
     if not batch:
         return HTMLResponse(content=PASSPORT_NOT_FOUND_HTML.format(batch_id=batch_id), status_code=404)
         
