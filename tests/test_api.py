@@ -256,7 +256,7 @@ class TestDairyTrackerAPI(unittest.TestCase):
                     time.sleep(2)
         raise last_err
 
-class TestPSGCCloudIntegration(unittest.TestCase):
+class TestLiveGovernmentAPIIntegration(unittest.TestCase):
     def test_psgc_cloud_api_reachable_live(self):
         """Active integration test verifying psgc.cloud API availability."""
         url = "https://psgc.cloud/api/provinces/cotabato/cities-municipalities"
@@ -273,6 +273,38 @@ class TestPSGCCloudIntegration(unittest.TestCase):
                 self.assertIn("Kabacan", municipalities)
         except Exception as e:
             self.fail(f"Failed to query psgc.cloud API: {e}")
+
+    def test_data_gov_ph_ckan_api_reachable_live(self):
+        """Active integration test verifying data.gov.ph CKAN API search endpoint query connectivity."""
+        url = "https://data.gov.ph/api/action/datastore_search"
+        params = {"q": "Cotabato", "limit": "5"}
+        import httpx
+        try:
+            with httpx.Client(timeout=15.0) as client:
+                response = client.get(url, params=params)
+                self.assertEqual(response.status_code, 200)
+                content_type = response.headers.get("content-type", "")
+                if "application/json" in content_type:
+                    data = response.json()
+                    self.assertTrue(data.get("success", False))
+                else:
+                    self.assertIn("html", content_type)
+        except Exception as e:
+            self.fail(f"Failed to query data.gov.ph CKAN API: {e}")
+
+    def test_cda_region_xii_portal_reachable_live(self):
+        """Active integration test verifying CDA Region XII portal page fetch and PDF link search validation."""
+        portal_url = "https://cda.gov.ph/region-12/list-of-cda-accredited-cooperatives-in-region-xii-as-of-march-31-2025/"
+        import httpx
+        import re
+        try:
+            with httpx.Client(timeout=15.0) as client:
+                response = client.get(portal_url)
+                self.assertEqual(response.status_code, 200)
+                pdf_links = re.findall(r'href=["\']([^"\']+\.pdf)', response.text, re.IGNORECASE)
+                self.assertTrue(len(pdf_links) > 0, "No PDF links found on CDA portal page")
+        except Exception as e:
+            self.fail(f"Failed to reach or parse CDA Region XII portal: {e}")
 
 if __name__ == '__main__':
     unittest.main()

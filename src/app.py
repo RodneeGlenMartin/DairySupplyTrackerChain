@@ -25,7 +25,7 @@ logger = logging.getLogger("dairy_tracker_api")
 
 app = FastAPI(
     title="Distributed Dairy Supply Chain and Logistics Tracker API",
-    description="REST API for herd genetics, cold-chain kinetics, and batch traceability.",
+    description="REST API for herd genetics, cold-chain kinetics, batch traceability, and decentralized government API integrations (data.gov.ph and cda.gov.ph).",
     version="1.0.0"
 )
 
