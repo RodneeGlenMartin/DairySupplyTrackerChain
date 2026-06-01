@@ -36,7 +36,7 @@ logger = logging.getLogger("dynamic_provisioner")
 
 # --- Constants ---
 
-PSGC_API_URL = "https://psgc.gitlab.io/api/provinces/124700000/cities-municipalities.json"
+PSGC_API_URL = "https://psgc.cloud/api/provinces/cotabato/cities-municipalities"
 RANDOMUSER_API_URL = "https://randomuser.me/api/"
 HTTP_TIMEOUT = 15.0
 MAX_RETRIES = 3
@@ -104,11 +104,14 @@ def fetch_psgc_municipalities() -> list:
     data = http_get_with_retry(PSGC_API_URL)
     municipalities = []
     for entry in data:
-        if entry.get("isMunicipality") or entry.get("isCity"):
+        name = entry.get("name", "").strip()
+        code = entry.get("code", "")
+        muni_type = entry.get("type", "")
+        if name and muni_type in ("City", "Mun"):
             municipalities.append({
-                "code": entry.get("code", ""),
-                "name": entry.get("name", ""),
-                "is_city": entry.get("isCity", False),
+                "code": code,
+                "name": name,
+                "is_city": muni_type == "City",
             })
     logger.info(f"Retrieved {len(municipalities)} municipalities from PSGC API")
     return municipalities

@@ -256,5 +256,23 @@ class TestDairyTrackerAPI(unittest.TestCase):
                     time.sleep(2)
         raise last_err
 
+class TestPSGCCloudIntegration(unittest.TestCase):
+    def test_psgc_cloud_api_reachable_live(self):
+        """Active integration test verifying psgc.cloud API availability."""
+        url = "https://psgc.cloud/api/provinces/cotabato/cities-municipalities"
+        import httpx
+        try:
+            with httpx.Client(timeout=10.0) as client:
+                response = client.get(url)
+                self.assertEqual(response.status_code, 200)
+                data = response.json()
+                self.assertIsInstance(data, list)
+                self.assertTrue(len(data) > 0)
+                # Verify that Kabacan exists in the response
+                municipalities = [m.get("name", "").strip() for m in data]
+                self.assertIn("Kabacan", municipalities)
+        except Exception as e:
+            self.fail(f"Failed to query psgc.cloud API: {e}")
+
 if __name__ == '__main__':
     unittest.main()

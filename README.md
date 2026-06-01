@@ -50,7 +50,7 @@ Ensures tamper-evident tracking of processed milk batches distributed through De
 The database setup runs completely mock-free with **zero local seed SQL files or static mock tables** in the repository. Instead, initial seeding and geographic records are constructed dynamically over the internet by `db/dynamic_provisioner.py`:
 
 - **Philippine Geographic Data Ingestion:**
-  The script performs active, real-time HTTP requests to the **official Philippine Standard Geographic Code (PSGC) API** (`psgc.gitlab.io`) to fetch current geographical municipalities of Cotabato (code `124700000`), South Cotabato (code `126300000`), and Sarangani (code `128000000`) over the internet.
+  The script performs active, real-time HTTP requests to the **official Philippine Standard Geographic Code (PSGC) Cloud API** (`psgc.cloud`) to fetch current geographical municipalities of Cotabato over the internet.
 - **Dynamic Representative Profiles:**
   Queries the open `randomuser.me` API dynamically to retrieve realistic names and contact details to generate cooperative representative profiles on the fly.
 - **Cryptographic Determinism:**
