@@ -45,12 +45,12 @@ jobs:
         python -m pip install --upgrade pip
         pip install -r requirements.txt
 
-    - name: Run Database Migrations and Seed
+    - name: Run Database Schema and Dynamic Provisioner
       env:
         DATABASE_URL: postgresql://postgres:postgres@localhost:5432/dairy_supplychain
       run: |
         PGPASSWORD=postgres psql -h localhost -U postgres -d dairy_supplychain -f db/schema.sql
-        PGPASSWORD=postgres psql -h localhost -U postgres -d dairy_supplychain -f db/seed.sql
+        python db/dynamic_provisioner.py
 
     - name: Run SWEBOK Test Suite
       env:

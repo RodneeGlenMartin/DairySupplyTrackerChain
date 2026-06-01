@@ -53,7 +53,7 @@ if [ "$DOCKER_AVAILABLE" = true ]; then
     -p 5432:5432 \
     postgres:15-alpine
 
-  echo -e "${YELLOW}2d. Waiting for database to be ready and loading seeds...${NC}"
+  echo -e "${YELLOW}2d. Waiting for database to be ready...${NC}"
   set +e
   TIMEOUT_DB=15
   ELAPSED_DB=0
@@ -77,9 +77,11 @@ if [ "$DOCKER_AVAILABLE" = true ]; then
   fi
   set -e
 
-  echo -e "${GREEN}Database is ready! Loading schema.sql and seed.sql...${NC}"
+  echo -e "${GREEN}Database is ready! Loading schema.sql...${NC}"
   docker exec -i dairy_postgres_db psql -U postgres -d dairy_supplychain < db/schema.sql
-  docker exec -i dairy_postgres_db psql -U postgres -d dairy_supplychain < db/seed.sql
+
+  echo -e "${YELLOW}Running dynamic PSGC API provisioner...${NC}"
+  DATABASE_URL=postgresql://postgres:postgres@localhost:5432/dairy_supplychain python db/dynamic_provisioner.py
 
   echo -e "${YELLOW}2e. Launching the Python REST API container...${NC}"
   docker run -d \
