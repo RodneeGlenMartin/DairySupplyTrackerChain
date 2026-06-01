@@ -1,4 +1,5 @@
 import unittest
+import time
 import psycopg2
 from fastapi.testclient import TestClient
 from datetime import datetime, date, timedelta
@@ -213,29 +214,47 @@ class TestDairyTrackerAPI(unittest.TestCase):
         self.assertIn("Audit Cryptographic Signatures", html_content)
 
     def test_weather_telemetry_integration_live(self):
-        payload = {
-            "initial_cfu": 1000.0,
-            "latitude": 7.118,
-            "longitude": 124.843
-        }
-        response = client.post("/telemetry", json=payload)
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertIn("final_cfu", data)
-        self.assertIn("status", data)
+        last_err = None
+        for attempt in range(3):
+            try:
+                payload = {
+                    "initial_cfu": 1000.0,
+                    "latitude": 7.118,
+                    "longitude": 124.843
+                }
+                response = client.post("/telemetry", json=payload)
+                self.assertEqual(response.status_code, 200)
+                data = response.json()
+                self.assertIn("final_cfu", data)
+                self.assertIn("status", data)
 
-        response_dash = client.get("/dashboard")
-        self.assertEqual(response_dash.status_code, 200)
-        self.assertIn("Plant Operator Telemetry Dashboard", response_dash.text)
-        self.assertIn("Canister CAN-001 (Kabacan)", response_dash.text)
+                response_dash = client.get("/dashboard")
+                self.assertEqual(response_dash.status_code, 200)
+                self.assertIn("Plant Operator Telemetry Dashboard", response_dash.text)
+                self.assertIn("Canister CAN-001 (Kabacan)", response_dash.text)
+                return  # Success
+            except Exception as e:
+                last_err = e
+                if attempt < 2:
+                    time.sleep(2)
+        raise last_err
 
     def test_soil_suitability_integration_live(self):
-        response = client.get("/api/soil-suitability?latitude=7.118&longitude=124.843")
-        self.assertEqual(response.status_code, 200)
-        data = response.json()
-        self.assertEqual(data["nearest_municipality"], "Kabacan")
-        self.assertEqual(data["soil_texture"], "Clay Loam")
-        self.assertIn("napier_grass", data["forage_suitability"])
+        last_err = None
+        for attempt in range(3):
+            try:
+                response = client.get("/api/soil-suitability?latitude=7.118&longitude=124.843")
+                self.assertEqual(response.status_code, 200)
+                data = response.json()
+                self.assertEqual(data["nearest_municipality"], "Kabacan")
+                self.assertEqual(data["soil_texture"], "Clay Loam")
+                self.assertIn("napier_grass", data["forage_suitability"])
+                return  # Success
+            except Exception as e:
+                last_err = e
+                if attempt < 2:
+                    time.sleep(2)
+        raise last_err
 
 if __name__ == '__main__':
     unittest.main()

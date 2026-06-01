@@ -3,6 +3,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
 from datetime import datetime, date, timedelta
+import asyncio
 import uuid
 import logging
 import os
@@ -50,14 +51,23 @@ MUNICIPALITIES_GEO = [
 
 async def fetch_open_meteo_weather(latitude: float, longitude: float) -> List[float]:
     url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&hourly=temperature_2m&past_days=1&forecast_days=1"
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.get(url)
-        response.raise_for_status()
-        data = response.json()
-        temps = data.get("hourly", {}).get("temperature_2m", [])
-        if not temps or len(temps) < 24:
-            raise RuntimeError("Invalid or incomplete weather data from Open-Meteo API")
-        return [float(t) for t in temps[-24:]]
+    last_err = None
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url)
+                response.raise_for_status()
+                data = response.json()
+                temps = data.get("hourly", {}).get("temperature_2m", [])
+                if not temps or len(temps) < 24:
+                    raise RuntimeError("Invalid or incomplete weather data from Open-Meteo API")
+                return [float(t) for t in temps[-24:]]
+        except Exception as e:
+            last_err = e
+            logger.warning(f"fetch_open_meteo_weather attempt {attempt+1}/3 failed: {e}")
+            if attempt < 2:
+                await asyncio.sleep(1)
+    raise RuntimeError(f"fetch_open_meteo_weather failed after 3 attempts: {last_err}")
 
 def evaluate_forage_suitability(temp: float, moisture: float, texture: str, clay_pct: float) -> Dict[str, Any]:
     # Napier grass evaluation
@@ -131,32 +141,41 @@ async def fetch_soil_suitability(latitude: float, longitude: float) -> Dict[str,
             nearest = m
             
     url = f"https://api.open-meteo.com/v1/forecast?latitude={latitude}&longitude={longitude}&hourly=soil_temperature_0_to_7cm,soil_moisture_0_to_7cm&forecast_days=1"
-    async with httpx.AsyncClient(timeout=10.0) as client:
-        response = await client.get(url)
-        response.raise_for_status()
-        data = response.json()
-        temps = data.get("hourly", {}).get("soil_temperature_0_to_7cm", [])
-        moistures = data.get("hourly", {}).get("soil_moisture_0_to_7cm", [])
-        if not temps or not moistures:
-            raise RuntimeError("Invalid or incomplete soil suitability data from Open-Meteo API")
-        soil_temp = float(sum(temps[:24]) / len(temps[:24]))
-        soil_moisture = float(sum(moistures[:24]) / len(moistures[:24]))
-        
-    evaluation = evaluate_forage_suitability(soil_temp, soil_moisture, nearest["texture"], nearest["clay_pct"])
-    
-    return {
-        "latitude": latitude,
-        "longitude": longitude,
-        "nearest_municipality": nearest["name"],
-        "soil_texture": nearest["texture"],
-        "clay_percentage": nearest["clay_pct"],
-        "soil_temperature_celsius": round(soil_temp, 2),
-        "soil_moisture_m3_m3": round(soil_moisture, 3),
-        "forage_suitability": {
-            "napier_grass": evaluation["napier"],
-            "guinea_grass": evaluation["guinea"]
-        }
-    }
+    last_err = None
+    for attempt in range(3):
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                response = await client.get(url)
+                response.raise_for_status()
+                data = response.json()
+                temps = data.get("hourly", {}).get("soil_temperature_0_to_7cm", [])
+                moistures = data.get("hourly", {}).get("soil_moisture_0_to_7cm", [])
+                if not temps or not moistures:
+                    raise RuntimeError("Invalid or incomplete soil suitability data from Open-Meteo API")
+                soil_temp = float(sum(temps[:24]) / len(temps[:24]))
+                soil_moisture = float(sum(moistures[:24]) / len(moistures[:24]))
+                
+                evaluation = evaluate_forage_suitability(soil_temp, soil_moisture, nearest["texture"], nearest["clay_pct"])
+                
+                return {
+                    "latitude": latitude,
+                    "longitude": longitude,
+                    "nearest_municipality": nearest["name"],
+                    "soil_texture": nearest["texture"],
+                    "clay_percentage": nearest["clay_pct"],
+                    "soil_temperature_celsius": round(soil_temp, 2),
+                    "soil_moisture_m3_m3": round(soil_moisture, 3),
+                    "forage_suitability": {
+                        "napier_grass": evaluation["napier"],
+                        "guinea_grass": evaluation["guinea"]
+                    }
+                }
+        except Exception as e:
+            last_err = e
+            logger.warning(f"fetch_soil_suitability attempt {attempt+1}/3 failed: {e}")
+            if attempt < 2:
+                await asyncio.sleep(1)
+    raise RuntimeError(f"fetch_soil_suitability failed after 3 attempts: {last_err}")
 
 def get_canister_status_details(final_cfu: float):
     if final_cfu > 1.0e5:
@@ -1617,22 +1636,22 @@ PASSPORT_FOUND_HTML = """<!DOCTYPE html>
     <title>Dairy Safety Traceability Passport</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {{
+        :root {
             --bg-color: #121212;
             --card-bg: #1E1E1E;
             --text-color: #F5F5F5;
             --text-muted: #A3A3A3;
             --border: #374151;
             --success: #10B981;
-        }}
+        }
         
-        * {{
+        * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-        }}
+        }
         
-        body {{
+        body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -1641,9 +1660,9 @@ PASSPORT_FOUND_HTML = """<!DOCTYPE html>
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-        }}
+        }
         
-        .card {{
+        .card {
             background-color: var(--card-bg);
             border-radius: 16px;
             border: 2px solid var(--border);
@@ -1654,15 +1673,15 @@ PASSPORT_FOUND_HTML = """<!DOCTYPE html>
             display: flex;
             flex-direction: column;
             gap: 24px;
-        }}
+        }
         
-        .badge-header {{
+        .badge-header {
             display: flex;
             align-items: center;
             gap: 16px;
-        }}
+        }
         
-        .check-circle {{
+        .check-circle {
             width: 48px;
             height: 48px;
             border-radius: 50%;
@@ -1674,59 +1693,59 @@ PASSPORT_FOUND_HTML = """<!DOCTYPE html>
             color: var(--success);
             font-size: 24px;
             font-weight: bold;
-        }}
+        }
         
-        .header-text h1 {{
+        .header-text h1 {
             font-family: 'Outfit', sans-serif;
             font-size: 22px;
             font-weight: 800;
-        }}
-        .header-text p {{
+        }
+        .header-text p {
             color: var(--text-muted);
             font-size: 14px;
             margin-top: 2px;
-        }}
+        }
         
-        .passport-desc {{
+        .passport-desc {
             font-size: 16px;
             line-height: 1.6;
             background-color: #121212;
             padding: 16px;
             border-radius: 8px;
             border: 1px solid var(--border);
-        }}
+        }
         
-        .details-group {{
+        .details-group {
             display: flex;
             flex-direction: column;
             gap: 12px;
-        }}
+        }
         
-        .detail-row {{
+        .detail-row {
             display: flex;
             justify-content: space-between;
             font-size: 15px;
             border-bottom: 1px solid var(--border);
             padding-bottom: 8px;
-        }}
-        .detail-lbl {{ color: var(--text-muted); }}
-        .detail-val {{ font-weight: 600; }}
+        }
+        .detail-lbl { color: var(--text-muted); }
+        .detail-val { font-weight: 600; }
         
-        details {{
+        details {
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 12px;
             background-color: #161616;
-        }}
+        }
         
-        summary {{
+        summary {
             font-weight: 600;
             cursor: pointer;
             outline: none;
             padding: 4px;
-        }}
+        }
         
-        .crypto-data {{
+        .crypto-data {
             margin-top: 12px;
             display: flex;
             flex-direction: column;
@@ -1737,12 +1756,12 @@ PASSPORT_FOUND_HTML = """<!DOCTYPE html>
             background-color: #121212;
             padding: 8px;
             border-radius: 4px;
-        }}
+        }
         
-        .crypto-lbl {{
+        .crypto-lbl {
             color: var(--text-muted);
             font-weight: bold;
-        }}
+        }
     </style>
 </head>
 <body>
@@ -1756,21 +1775,21 @@ PASSPORT_FOUND_HTML = """<!DOCTYPE html>
         </div>
         
         <p class="passport-desc">
-            This batch of <strong>{product_type}</strong> was pasteurized at <strong>{pasteur_temp}°C</strong> on <strong>{manufacture_date}</strong>. Safety tests: <strong>{coliform_status}</strong>.
+            This batch of <strong>__PRODUCT_TYPE__</strong> was pasteurized at <strong>__PASTEUR_TEMP__°C</strong> on <strong>__MANUFACTURE_DATE__</strong>. Safety tests: <strong>__COLIFORM_STATUS__</strong>.
         </p>
         
         <div class="details-group">
             <div class="detail-row">
                 <span class="detail-lbl">Batch Identifier</span>
-                <span class="detail-val">{batch_identifier}</span>
+                <span class="detail-val">__BATCH_IDENTIFIER__</span>
             </div>
             <div class="detail-row">
                 <span class="detail-lbl">Units Produced</span>
-                <span class="detail-val">{units_produced}</span>
+                <span class="detail-val">__UNITS_PRODUCED__</span>
             </div>
             <div class="detail-row">
                 <span class="detail-lbl">Expiry Date</span>
-                <span class="detail-val">{expiry_date}</span>
+                <span class="detail-val">__EXPIRY_DATE__</span>
             </div>
         </div>
         
@@ -1779,11 +1798,11 @@ PASSPORT_FOUND_HTML = """<!DOCTYPE html>
             <div class="crypto-data">
                 <div>
                     <span class="crypto-lbl">Current Batch Signature:</span><br>
-                    <span>{signature}</span>
+                    <span>__SIGNATURE__</span>
                 </div>
                 <div style="margin-top: 8px;">
                     <span class="crypto-lbl">Previous Link Hash:</span><br>
-                    <span>{previous_hash}</span>
+                    <span>__PREVIOUS_HASH__</span>
                 </div>
             </div>
         </details>
@@ -1800,16 +1819,16 @@ PASSPORT_NOT_FOUND_HTML = """<!DOCTYPE html>
     <title>Dairy Safety Traceability Passport - Not Found</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
-        :root {{
+        :root {
             --bg-color: #121212;
             --card-bg: #1E1E1E;
             --text-color: #F5F5F5;
             --text-muted: #A3A3A3;
             --border: #374151;
             --error: #EF4444;
-        }}
+        }
         
-        body {{
+        body {
             font-family: 'Inter', sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
@@ -1818,9 +1837,9 @@ PASSPORT_NOT_FOUND_HTML = """<!DOCTYPE html>
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-        }}
+        }
         
-        .card {{
+        .card {
             background-color: var(--card-bg);
             border-radius: 16px;
             border: 2px solid var(--border);
@@ -1833,9 +1852,9 @@ PASSPORT_NOT_FOUND_HTML = """<!DOCTYPE html>
             align-items: center;
             gap: 20px;
             text-align: center;
-        }}
+        }
         
-        .warning-circle {{
+        .warning-circle {
             width: 64px;
             height: 64px;
             border-radius: 50%;
@@ -1847,13 +1866,13 @@ PASSPORT_NOT_FOUND_HTML = """<!DOCTYPE html>
             color: var(--error);
             font-size: 32px;
             font-weight: bold;
-        }}
+        }
         
-        h1 {{
+        h1 {
             font-family: 'Outfit', sans-serif;
             font-size: 24px;
             font-weight: 800;
-        }}
+        }
         
         p {
             color: var(--text-muted);
@@ -1866,7 +1885,7 @@ PASSPORT_NOT_FOUND_HTML = """<!DOCTYPE html>
         <div class="warning-circle">!</div>
         <h1>Safety Passport Not Found</h1>
         <p>
-            The batch identifier <strong>{batch_id}</strong> could not be located in our physical database. Please check spelling or verify registration status.
+            The batch identifier <strong>__BATCH_ID__</strong> could not be located in our physical database. Please check spelling or verify registration status.
         </p>
     </div>
 </body>
@@ -1951,17 +1970,18 @@ def get_passport_portal(batch_id: str):
         )
             
     if not batch:
-        return HTMLResponse(content=PASSPORT_NOT_FOUND_HTML.format(batch_id=batch_id), status_code=404)
+        html = PASSPORT_NOT_FOUND_HTML.replace("__BATCH_ID__", batch_id)
+        return HTMLResponse(content=html, status_code=404)
         
-    return HTMLResponse(content=PASSPORT_FOUND_HTML.format(
-        product_type=batch["product_type"],
-        pasteur_temp=float(batch["pasteurization_temp_celsius"]),
-        manufacture_date=str(batch["manufacture_date"]),
-        coliform_status=batch["coliform_test_status"],
-        batch_identifier=batch["batch_identifier"],
-        units_produced=batch["quantity_units_produced"],
-        expiry_date=str(batch["expiry_date"]),
-        signature=batch["cryptographic_signature"],
-        previous_hash=batch["previous_batch_hash"]
-    ))
+    html = PASSPORT_FOUND_HTML
+    html = html.replace("__PRODUCT_TYPE__", str(batch["product_type"]))
+    html = html.replace("__PASTEUR_TEMP__", str(float(batch["pasteurization_temp_celsius"])))
+    html = html.replace("__MANUFACTURE_DATE__", str(batch["manufacture_date"]))
+    html = html.replace("__COLIFORM_STATUS__", str(batch["coliform_test_status"]))
+    html = html.replace("__BATCH_IDENTIFIER__", str(batch["batch_identifier"]))
+    html = html.replace("__UNITS_PRODUCED__", str(batch["quantity_units_produced"]))
+    html = html.replace("__EXPIRY_DATE__", str(batch["expiry_date"]))
+    html = html.replace("__SIGNATURE__", str(batch["cryptographic_signature"]))
+    html = html.replace("__PREVIOUS_HASH__", str(batch["previous_batch_hash"]))
+    return HTMLResponse(content=html)
 
