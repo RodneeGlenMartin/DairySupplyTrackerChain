@@ -6,7 +6,7 @@ An enterprise-grade, hardware-integrated backend, concurrency-safe query ledger,
 
 ## 1. System Architecture & Core Mathematical Engines
 
-The platform is structured into three specialized modules that manage herd genetics, thermodynamic cold-chain kinetics, and supply chain authenticity:
+The platform is structured into specialized modules that manage herd genetics, thermodynamic cold-chain kinetics, and supply chain authenticity:
 
 ### A. Herd Genetics & Breeding Ledger (`src/genetics.py`)
 Provides pedigree auditing and inbreeding prevention algorithms to maintain herd health:
@@ -39,23 +39,74 @@ Processes real-time IoT temperature telemetry logs to predict raw milk degradati
 ### C. Cryptographic Distribution Ledger (`src/distribution.py`)
 Ensures tamper-evident tracking of processed milk batches distributed through Department of Education (DepEd) and Department of Social Welfare and Development (DSWD) school-milk feeding programs:
 - **Tamper-Evident SHA-256 Batch Chaining:**
-  Creates a sequential, cryptographically linked chain of batch records where the signature of batch $B_i$ depends on the signature of the predecessor $B_{i-1}$:
-  $$H_i = \text{SHA256}(H_{i-1} \parallel \text{BatchID}_i \parallel \text{Volume}_i \parallel \text{Temp}_i \parallel \text{Coliform}_i \parallel \text{Date}_i)$$
-  Any attempt to alter historical records breaks the cryptographic signature chain, immediately invalidating downstream distribution receipts.
+   Creates a sequential, cryptographically linked chain of batch records where the signature of batch $B_i$ depends on the signature of the predecessor $B_{i-1}$:
+   $$H_i = \text{SHA256}(H_{i-1} \parallel \text{BatchID}_i \parallel \text{Volume}_i \parallel \text{Temp}_i \parallel \text{Coliform}_i \parallel \text{Date}_i)$$
+   Any attempt to alter historical records breaks the cryptographic signature chain, immediately invalidating downstream distribution receipts.
 
 ---
 
-## 2. Technology Stack
+## 2. Dynamic, Seed-Free Database Provisioning
+
+The database setup runs completely mock-free with **zero local seed SQL files or static mock tables** in the repository. Instead, initial seeding and geographic records are constructed dynamically over the internet by `db/dynamic_provisioner.py`:
+
+- **Philippine Geographic Data Ingestion:**
+  The script performs active, real-time HTTP requests to the **official Philippine Standard Geographic Code (PSGC) API** (`psgc.gitlab.io`) to fetch current geographical municipalities of Cotabato (code `124700000`), South Cotabato (code `126300000`), and Sarangani (code `128000000`) over the internet.
+- **Dynamic Representative Profiles:**
+  Queries the open `randomuser.me` API dynamically to retrieve realistic names and contact details to generate cooperative representative profiles on the fly.
+- **Cryptographic Determinism:**
+  To maintain test compatibility without relying on static local mock tables, the system uses deterministic UUID mapping via `uuid.uuid5(namespace, name)` to bind live-ingested municipalities to identical, repeatable UUID keys. This guarantees that test suite assertions referencing specific cooperatives and animal pedigree IDs remain perfectly valid and aligned across runs.
+- **Pedigree Reconstruction:**
+  Generates a 5-generation animal pedigree tree dynamically (complete with Great-Great-Great Grandparents to target Cousin A and Cousin B) to serve as a baseline for the Wright's coefficient relationship checks.
+
+---
+
+## 3. Live Climate-Driven Spoilage Telemetry
+
+The thermodynamic cold-chain predictor (`src/coldchain.py`) is fully integrated with environmental conditions:
+- **Open-Meteo Integration:**
+  On batch submission or telemetry checks, the system fetches the actual, live ambient temperature log for the past 24 hours directly from the **Open-Meteo API** based on canister coordinates (e.g. Kabacan: Lat 7.118, Lon 124.843, or Midsayap: Lat 7.192, Lon 124.530).
+- **Arrhenius Integration:**
+  These 24 real-time temperature telemetry data points are fed into the Arrhenius decay calculation, replacing static mock temperature profiles with live climate measurements.
+
+---
+
+## 4. Accessible UI & Dynamic Translations
+
+The Field Portal and Operator Dashboard provide a mobile-first, accessible, and multi-lingual interface layer:
+- **Acoustic & Haptic Feedback Mappings:**
+  To assist field technicians working with gloves in high-glare outdoor environments, the Web UI maps key transactions to haptic vibrations and synthesized audio beeps:
+  - **Success Indicator:** Generates a 1000 Hz sine wave beep for 0.15 seconds, accompanied by a 100ms haptic vibration pulse on the device.
+  - **Error / Blocker Warning:** Generates a low-frequency 150 Hz sawtooth wave warning tone for 0.5 seconds, accompanied by a double-pulse vibration pattern `[400ms on, 100ms off, 400ms on]` to signal validation failures (such as inbreeding blocks).
+- **Dynamic Multilingual Translations:**
+  The portal includes a translation toggle supporting English, Cebuano, Hiligaynon, and Tagalog. Switching languages triggers on-the-fly requests to the public **MyMemory Translation API** (`https://api.mymemory.translated.net/get`).
+- **Session Cache:**
+  To optimize network calls and minimize latency, translated labels are saved in the client's local `sessionStorage` cache.
+
+---
+
+## 5. Outage and Failover Handling
+
+To protect request latency and maintain operational resilience during connectivity loss:
+- **Connection Timeouts:**
+  All `httpx.AsyncClient` network calls enforce strict connection timeout boundaries (defaulting to a strict `3.0 seconds` configuration, optimized up to `10.0 seconds` for high-latency test runners).
+- **Transient Outage Resilience:**
+  The system utilizes a 3-attempt retry loop with exponential/linear backoffs for Open-Meteo and MyMemory requests.
+- **Client Offline Synchronization Queue:**
+  If the network is completely down, the Field Portal caches submitted animal registrations and breeding logs locally using the browser's `localStorage` and client queue retry loops, automatically synchronization once connection is restored.
+
+---
+
+## 6. Technology Stack
 
 - **Core Runtime:** Python 3.11
 - **Database Engine:** PostgreSQL 15 (utilizing `SERIALIZABLE` transaction isolation and row-level locking for batch allocations)
 - **API Gateway:** FastAPI & Uvicorn (REST API routing, Pydantic data validation schemas)
 - **Virtualization & Orchestration:** Docker, Docker Compose, Kubernetes (Deployment and Service configs)
-- **Verification Engine:** pytest (23 SWEBOK-aligned unit, integration, database durability, and chaos tests)
+- **Verification Engine:** pytest (SWEBOK-aligned unit, integration, database durability, and chaos tests)
 
 ---
 
-## 3. Getting Started & Verification Commands
+## 7. Getting Started & Verification Commands
 
 ### Prerequisite Setup
 Clone the repository and install requirements in your environment:
@@ -63,14 +114,20 @@ Clone the repository and install requirements in your environment:
 pip install -r requirements.txt
 ```
 
+### Running the Dynamic Provisioner
+Initialize the database structure and dynamically seed the cooperative registries, pedigree records, and test logs over live web APIs:
+```bash
+python db/dynamic_provisioner.py
+```
+
 ### Running the Test Suite
-Run the 23 SWEBOK-aligned tests locally:
+The SWEBOK-aligned test suite (`pytest -v`) now executes all 27 integration tests completely mock-free over active internet connections:
 ```bash
 pytest -v
 ```
 
 ### Deploying via Docker Compose
-To build the multi-stage production Docker image and start the application container stack along with the PostgreSQL database:
+To build the multi-stage production Docker image and start the application container stack:
 ```bash
 docker compose up --build -d
 ```
@@ -87,17 +144,4 @@ Execute the validator script to verify k8s resource configurations, namespace, p
 ```bash
 chmod +x k8s/validate_k8s.sh
 ./k8s/validate_k8s.sh
-```
-
----
-
-## 4. Production Schema Migration
-
-To apply DDL schema migrations against a target remote production database without seeding development test data:
-```bash
-# Set your production database URL connection string
-export DATABASE_URL="postgresql://db_user:secure_prod_password@prod-db-host.internal:5432/dairy_supplychain_prod"
-
-# Execute standalone migrator (validates schema via catalog checks)
-python db/prod_migration.py
 ```
