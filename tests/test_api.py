@@ -174,5 +174,143 @@ class TestDairyTrackerAPI(unittest.TestCase):
         with self.assertRaises(RuntimeError):
             client.post("/animals", json=payload)
 
+    def test_field_portal_accessible_elements(self):
+        # Verify /field endpoint returns HTML and accessibility hooks
+        for path in ("/", "/field"):
+            response = client.get(path)
+            self.assertEqual(response.status_code, 200)
+            self.assertIn("text/html", response.headers["content-type"])
+            html_content = response.text
+            self.assertIn("Field Technician Portal", html_content)
+            self.assertIn("lang-select", html_content)
+            self.assertIn("sync-indicator", html_content)
+            self.assertIn("animal-form", html_content)
+            self.assertIn("breeding-form", html_content)
+            self.assertIn("playBeep", html_content)
+
+    def test_dashboard_telemetry_elements(self):
+        # Verify /dashboard endpoint returns telemetry dashboard elements
+        response = client.get("/dashboard")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("text/html", response.headers["content-type"])
+        html_content = response.text
+        self.assertIn("Plant Operator Telemetry Dashboard", html_content)
+        self.assertIn("canister-card", html_content)
+        self.assertIn("disclosure-trigger", html_content)
+        self.assertIn("details-panel", html_content)
+        self.assertIn("growth-curve", html_content)
+
+    def test_passport_validation_endpoints(self):
+        # Verify passport 404 for missing batches
+        response = client.get("/passport/INVALID-BATCH-ID")
+        self.assertEqual(response.status_code, 404)
+        self.assertIn("Safety Passport Not Found", response.text)
+
+        # Seed a dummy batch in IN_MEMORY_PRODUCT_BATCHES to verify 200 OK rendering
+        from src.app import IN_MEMORY_PRODUCT_BATCHES
+        mock_batch = {
+            "id": "test-uuid-9999",
+            "batch_identifier": "TEST-BATCH-PASSPORT",
+            "product_type": "Yogurt",
+            "quantity_units_produced": 250,
+            "manufacture_date": date(2026, 6, 1),
+            "shelf_life_days": 14,
+            "expiry_date": date(2026, 6, 15),
+            "coliform_test_status": "Passed",
+            "pasteurization_temp_celsius": 72.5,
+            "previous_batch_hash": "0" * 64,
+            "cryptographic_signature": "a" * 64
+        }
+        IN_MEMORY_PRODUCT_BATCHES.append(mock_batch)
+
+        # Retrieve and verify passport
+        response = client.get("/passport/TEST-BATCH-PASSPORT")
+        self.assertEqual(response.status_code, 200)
+        html_content = response.text
+        self.assertIn("Dairy Safety Passport", html_content)
+        self.assertIn("Yogurt", html_content)
+        self.assertIn("72.5", html_content)
+        self.assertIn("Passed", html_content)
+        self.assertIn("Audit Cryptographic Signatures", html_content)
+
+    @patch("httpx.AsyncClient.get", new_callable=unittest.mock.AsyncMock)
+    def test_weather_telemetry_integration_mocked(self, mock_get):
+        class MockResponse:
+            def __init__(self, json_data, status_code):
+                self.json_data = json_data
+                self.status_code = status_code
+            def json(self):
+                return self.json_data
+        
+        mock_weather_data = {
+            "hourly": {
+                "time": [f"2026-06-01T{i:02d}:00" for i in range(48)],
+                "temperature_2m": [4.0 + (i % 2) for i in range(48)]
+            }
+        }
+        mock_get.return_value = MockResponse(mock_weather_data, 200)
+
+        # Call process_telemetry endpoint with coordinates
+        payload = {
+            "initial_cfu": 1000.0,
+            "latitude": 7.118,
+            "longitude": 124.843
+        }
+        response = client.post("/telemetry", json=payload)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("final_cfu", data)
+        self.assertEqual(data["status"], "Normal")
+
+        # Call get_dashboard_portal and verify it renders
+        response_dash = client.get("/dashboard")
+        self.assertEqual(response_dash.status_code, 200)
+        self.assertIn("Plant Operator Telemetry Dashboard", response_dash.text)
+        self.assertIn("Canister CAN-001 (Kabacan)", response_dash.text)
+
+    @patch("httpx.AsyncClient.get", new_callable=unittest.mock.AsyncMock)
+    def test_soil_suitability_integration_mocked(self, mock_get):
+        class MockResponse:
+            def __init__(self, json_data, status_code):
+                self.json_data = json_data
+                self.status_code = status_code
+            def json(self):
+                return self.json_data
+
+        mock_soil_data = {
+            "hourly": {
+                "soil_temperature_0_to_7cm": [27.0] * 24,
+                "soil_moisture_0_to_7cm": [0.25] * 24
+            }
+        }
+        mock_get.return_value = MockResponse(mock_soil_data, 200)
+
+        # Call get_soil_suitability
+        response = client.get("/api/soil-suitability?latitude=7.118&longitude=124.843")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["nearest_municipality"], "Kabacan")
+        self.assertEqual(data["soil_texture"], "Clay Loam")
+        self.assertEqual(data["forage_suitability"]["napier_grass"], "High")
+
+    @patch("httpx.AsyncClient.get", new_callable=unittest.mock.AsyncMock)
+    def test_external_api_network_timeout_fallback(self, mock_get):
+        import httpx
+        mock_get.side_effect = httpx.ConnectTimeout("Connection timed out")
+
+        # 1. Test soil suitability fallback
+        response = client.get("/api/soil-suitability?latitude=7.118&longitude=124.843")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["soil_temperature_celsius"], 26.5)
+        self.assertEqual(data["soil_moisture_m3_m3"], 0.220)
+
+        # 2. Test dashboard weather fallback
+        response_dash = client.get("/dashboard")
+        self.assertEqual(response_dash.status_code, 200)
+        self.assertIn("Plant Operator Telemetry Dashboard", response_dash.text)
+
 if __name__ == '__main__':
+    import unittest.mock
     unittest.main()
+
