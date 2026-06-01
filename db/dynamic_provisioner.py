@@ -383,33 +383,42 @@ def provision_raw_milk_batches(cursor):
     logger.info(f"Inserted {len(batches)} raw milk batch records")
 
 
+def safe_print(msg: str):
+    """Print message safely, handling encoding errors on Windows."""
+    try:
+        enc = sys.stdout.encoding or "utf-8"
+        print(msg.encode(enc, errors="replace").decode(enc))
+    except Exception:
+        print(msg.encode("ascii", errors="ignore").decode("ascii"))
+
+
 def run_provisioner():
     """Main entry point: fetch live API data and provision the database."""
-    print("=" * 60)
-    print("Dynamic PSGC Government API Database Provisioner")
-    print("=" * 60)
+    safe_print("=" * 60)
+    safe_print("Dynamic PSGC Government API Database Provisioner")
+    safe_print("=" * 60)
 
     # Step 1: Fetch municipalities from PSGC API
-    print("\n[1/4] Fetching municipalities from Philippine PSGC API...")
+    safe_print("\n[1/4] Fetching municipalities from Philippine PSGC API...")
     municipalities = fetch_psgc_municipalities()
-    print(f"      Retrieved {len(municipalities)} municipalities:")
+    safe_print(f"      Retrieved {len(municipalities)} municipalities:")
     for m in municipalities[:6]:
-        print(f"        - {m['name']} (Code: {m['code']})")
+        safe_print(f"        - {m['name']} (Code: {m['code']})")
     if len(municipalities) > 6:
-        print(f"        ... and {len(municipalities) - 6} more")
+        safe_print(f"        ... and {len(municipalities) - 6} more")
 
     # Step 2: Fetch representative names from randomuser.me
-    print("\n[2/4] Fetching representative names from RandomUser.me API...")
+    safe_print("\n[2/4] Fetching representative names from RandomUser.me API...")
     name_count = min(len(municipalities), 25)
     names = fetch_random_names(name_count)
-    print(f"      Retrieved {len(names)} names:")
+    safe_print(f"      Retrieved {len(names)} names:")
     for n in names[:4]:
-        print(f"        - {n}")
+        safe_print(f"        - {n}")
     if len(names) > 4:
-        print(f"        ... and {len(names) - 4} more")
+        safe_print(f"        ... and {len(names) - 4} more")
 
     # Step 3: Connect to database and provision
-    print(f"\n[3/4] Connecting to PostgreSQL database...")
+    safe_print(f"\n[3/4] Connecting to PostgreSQL database...")
     try:
         conn = psycopg2.connect(DATABASE_URL, connect_timeout=10)
         conn.autocommit = False
@@ -431,10 +440,10 @@ def run_provisioner():
         provision_raw_milk_batches(cursor)
 
         conn.commit()
-        print(f"\n[4/4] Database provisioning complete!")
-        print(f"      Cooperatives inserted: {coop_count}")
-        print(f"      Animals (pedigree):     14")
-        print(f"      Raw milk batches:       3")
+        safe_print(f"\n[4/4] Database provisioning complete!")
+        safe_print(f"      Cooperatives inserted: {coop_count}")
+        safe_print(f"      Animals (pedigree):     14")
+        safe_print(f"      Raw milk batches:       3")
 
         # Verification query
         cursor.execute("SELECT COUNT(*) FROM cooperatives;")
@@ -444,23 +453,23 @@ def run_provisioner():
         cursor.execute("SELECT COUNT(*) FROM raw_milk_batches;")
         total_batches = cursor.fetchone()[0]
 
-        print(f"\n      Verification totals:")
-        print(f"        cooperatives:    {total_coops}")
-        print(f"        animals:         {total_animals}")
-        print(f"        raw_milk_batches: {total_batches}")
+        safe_print(f"\n      Verification totals:")
+        safe_print(f"        cooperatives:    {total_coops}")
+        safe_print(f"        animals:         {total_animals}")
+        safe_print(f"        raw_milk_batches: {total_batches}")
 
     except Exception as e:
         conn.rollback()
         logger.critical(f"Provisioning failed: {e}")
-        print(f"\nFATAL: Provisioning failed, transaction rolled back: {e}")
+        safe_print(f"\nFATAL: Provisioning failed, transaction rolled back: {e}")
         sys.exit(1)
     finally:
         cursor.close()
         conn.close()
 
-    print("\n" + "=" * 60)
-    print("SUCCESS: Dynamic provisioning completed.")
-    print("=" * 60)
+    safe_print("\n" + "=" * 60)
+    safe_print("SUCCESS: Dynamic provisioning completed.")
+    safe_print("=" * 60)
 
 
 if __name__ == "__main__":
