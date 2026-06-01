@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Database Service (PostgreSQL with preloaded schema & seeds)
+  db:
+    image: postgres:15-alpine
+    container_name: dairy_postgres_db
+    environment:
+      POSTGRES_DB: dairy_supplychain
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./db/schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
+      - ./db/seed.sql:/docker-entrypoint-initdb.d/02_seed.sql
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d dairy_supplychain"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Python Backend API Service
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dairy_tracker_api
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/dairy_supplychain
+      - KINETIC_MODEL_ACTIVATION_ENERGY=64000
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
