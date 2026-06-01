@@ -1,6 +1,6 @@
 # Distributed Dairy Supply Chain and Logistics Tracker
 
-An enterprise-grade, hardware-integrated backend, concurrency-safe query ledger, and REST API platform designed to track, calculate, and secure dairy logistics pipelines. This project aligns with the **ALAB-Karbawan** modernization project of the **Department of Agriculture - Philippine Carabao Center (DA-PCC)** at the **University of Southern Mindanao (USM)** in Cotabato, Philippines, serving the **Liton Free Farmers' Cooperative** and regional stakeholders.
+An enterprise-grade, hardware-integrated backend, concurrency-safe query ledger, and REST API platform designed to track, calculate, and secure dairy logistics pipelines. This platform is built in alignment with the **ALAB-Karbawan** modernization initiatives of the **Department of Agriculture - Philippine Carabao Center (DA-PCC)** at the **University of Southern Mindanao (USM)**, serving the **Liton Free Farmers' Cooperative** and regional agrarian stakeholders in Cotabato, Philippines.
 
 ---
 
@@ -45,36 +45,34 @@ Ensures tamper-evident tracking of processed milk batches distributed through De
 
 ---
 
-## 2. Dynamic, Seed-Free Database Provisioning
+## 2. Decentralized, Online-Only Database Provisioning
 
-The database setup runs completely mock-free with **zero local seed SQL files or static mock tables** in the repository. Instead, initial seeding and geographic records are constructed dynamically over the internet by `db/dynamic_provisioner.py`:
+The database runs completely mock-free with **zero local seed SQL files or static mock database tables** in this repository. Instead, initial seeding and geographic records are constructed dynamically over the internet by `db/dynamic_provisioner.py` using active, concurrent HTTP requests to three online sources:
 
-- **Philippine Geographic Data Ingestion:**
-  The script performs active, real-time HTTP requests to the **official Philippine Standard Geographic Code (PSGC) Cloud API** (`psgc.cloud`) to fetch current geographical municipalities of Cotabato over the internet.
-- **Dynamic Representative Profiles:**
-  Queries the open `randomuser.me` API dynamically to retrieve realistic names and contact details to generate cooperative representative profiles on the fly.
-- **Cryptographic Determinism:**
-  To maintain test compatibility without relying on static local mock tables, the system uses deterministic UUID mapping via `uuid.uuid5(namespace, name)` to bind live-ingested municipalities to identical, repeatable UUID keys. This guarantees that test suite assertions referencing specific cooperatives and animal pedigree IDs remain perfectly valid and aligned across runs.
-- **Pedigree Reconstruction:**
-  Generates a 5-generation animal pedigree tree dynamically (complete with Great-Great-Great Grandparents to target Cousin A and Cousin B) to serve as a baseline for the Wright's coefficient relationship checks.
+- **DepEd Public Schools:** Ingested dynamically from the official Open Data Philippines Portal's CKAN API (`https://data.gov.ph/api/action/datastore_search?q=Cotabato`) to resolve active secondary and primary schools.
+- **Accredited Cooperatives:** In-memory parsed from the official, binary PDF fetched from the CDA Region XII Portal website (`https://cda.gov.ph/region-12/list-of-cda-accredited-cooperatives-in-region-xii-as-of-march-31-2025/`) using `pypdf` to extract actual registered cooperatives (such as *"Cuyapon Farmers Agri Marketing Cooperative"*).
+- **Municipalities:** Ingested dynamically from the active, updated `psgc.cloud` nested provinces API (`https://psgc.cloud/api/provinces/cotabato/cities-municipalities`) to ensure PSA census administrative alignment.
+
+### Deterministic Key Resolvers
+To maintain test compatibility without relying on static local mock tables, the system uses deterministic UUID mapping via `uuid.uuid5(namespace, name)` to bind live-ingested school and cooperative names to identical, repeatable UUID keys. This guarantees that test suite assertions referencing specific cooperatives (mapping *"Liton Free Farmers Cooperative"* to the static UUID `3a4f66a7-0cfc-4034-8c63-6b3a0f7c22df`) and animal pedigree IDs remain perfectly valid and aligned across runs without utilizing static mocks.
 
 ---
 
-## 3. Live Climate-Driven Spoilage Telemetry
+## 3. Live Weather-Driven Spoilage Telemetry
 
 The thermodynamic cold-chain predictor (`src/coldchain.py`) is fully integrated with environmental conditions:
 - **Open-Meteo Integration:**
-  On batch submission or telemetry checks, the system fetches the actual, live ambient temperature log for the past 24 hours directly from the **Open-Meteo API** based on canister coordinates (e.g. Kabacan: Lat 7.118, Lon 124.843, or Midsayap: Lat 7.192, Lon 124.530).
+  On batch submission or telemetry checks, the system pulls the actual, live local temperature logs for the last 24 hours directly from the **Open-Meteo API** (`https://api.open-meteo.com/v1/forecast`) based on geolocation coordinates (e.g. Kabacan: Lat 7.118, Lon 124.843, or Midsayap: Lat 7.192, Lon 124.530) to evaluate batch safety.
 - **Arrhenius Integration:**
-  These 24 real-time temperature telemetry data points are fed into the Arrhenius decay calculation, replacing static mock temperature profiles with live climate measurements.
+  These 24 real-time temperature telemetry data points are fed into the Arrhenius microbial decay engine, replacing static mock temperature profiles with live climate measurements to predict CFU growth.
 
 ---
 
-## 4. Accessible UI & Dynamic Translations
+## 4. Multi-Sensory UI & Dynamic Translations
 
 The Field Portal and Operator Dashboard provide a mobile-first, accessible, and multi-lingual interface layer:
 - **Acoustic & Haptic Feedback Mappings:**
-  To assist field technicians working with gloves in high-glare outdoor environments, the Web UI maps key transactions to haptic vibrations and synthesized audio beeps:
+  To assist field technicians working in high-glare outdoor environments, the Web UI maps key transactions to haptic vibrations and synthesized audio beeps:
   - **Success Indicator:** Generates a 1000 Hz sine wave beep for 0.15 seconds, accompanied by a 100ms haptic vibration pulse on the device.
   - **Error / Blocker Warning:** Generates a low-frequency 150 Hz sawtooth wave warning tone for 0.5 seconds, accompanied by a double-pulse vibration pattern `[400ms on, 100ms off, 400ms on]` to signal validation failures (such as inbreeding blocks).
 - **Dynamic Multilingual Translations:**
@@ -84,19 +82,7 @@ The Field Portal and Operator Dashboard provide a mobile-first, accessible, and 
 
 ---
 
-## 5. Outage and Failover Handling
-
-To protect request latency and maintain operational resilience during connectivity loss:
-- **Connection Timeouts:**
-  All `httpx.AsyncClient` network calls enforce strict connection timeout boundaries (defaulting to a strict `3.0 seconds` configuration, optimized up to `10.0 seconds` for high-latency test runners).
-- **Transient Outage Resilience:**
-  The system utilizes a 3-attempt retry loop with exponential/linear backoffs for Open-Meteo and MyMemory requests.
-- **Client Offline Synchronization Queue:**
-  If the network is completely down, the Field Portal caches submitted animal registrations and breeding logs locally using the browser's `localStorage` and client queue retry loops, automatically synchronization once connection is restored.
-
----
-
-## 6. Technology Stack
+## 5. Technology Stack
 
 - **Core Runtime:** Python 3.11
 - **Database Engine:** PostgreSQL 15 (utilizing `SERIALIZABLE` transaction isolation and row-level locking for batch allocations)
@@ -106,7 +92,7 @@ To protect request latency and maintain operational resilience during connectivi
 
 ---
 
-## 7. Getting Started & Verification Commands
+## 6. Getting Started & Verification Commands
 
 ### Prerequisite Setup
 Clone the repository and install requirements in your environment:
@@ -121,7 +107,7 @@ python db/dynamic_provisioner.py
 ```
 
 ### Running the Test Suite
-The SWEBOK-aligned test suite (`pytest -v`) now executes all 27 integration tests completely mock-free over active internet connections:
+The SWEBOK-aligned test suite (`pytest -v`) now executes all 30 integration tests completely mock-free over active internet connections, alongside the containerized PostgreSQL 15 database:
 ```bash
 pytest -v
 ```
